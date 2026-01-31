@@ -220,6 +220,100 @@
             font-size: 4rem; margin-bottom: 15px; opacity: 0.5;
         }
         
+        /* Modo Cocina */
+        .cooking-mode {
+            background: var(--bg-card); border-radius: 20px; padding: 30px;
+            margin-top: 20px;
+        }
+        .cooking-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 30px; flex-wrap: wrap; gap: 15px;
+        }
+        .cooking-timer {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 3px solid var(--border); border-radius: 15px;
+            padding: 25px; text-align: center; margin-bottom: 30px;
+        }
+        .cooking-timer .time {
+            font-family: 'Playfair Display', serif; font-size: 4rem;
+            font-weight: 900; color: var(--primary-dark);
+            text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
+            margin: 15px 0;
+        }
+        .cooking-timer .time.running {
+            animation: pulse 2s infinite;
+        }
+        .cooking-controls {
+            display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .cooking-controls button {
+            padding: 12px 24px; font-size: 1rem;
+        }
+        .cooking-steps {
+            background: white; border-radius: 15px; padding: 25px;
+            border: 2px solid var(--border);
+        }
+        .cooking-step {
+            padding: 20px; border-left: 4px solid var(--border);
+            margin-bottom: 15px; background: #fffbeb; border-radius: 0 10px 10px 0;
+            transition: all 0.3s ease;
+        }
+        .cooking-step.completed {
+            opacity: 0.6; border-left-color: var(--secondary);
+            background: #f0fdf4;
+        }
+        .cooking-step.active {
+            border-left-color: var(--primary); background: #fef3c7;
+            box-shadow: 0 4px 6px rgba(217, 119, 6, 0.2);
+        }
+        .cooking-step-number {
+            display: inline-block; background: var(--primary);
+            color: white; width: 32px; height: 32px; border-radius: 50%;
+            text-align: center; line-height: 32px; font-weight: 700;
+            margin-right: 15px;
+        }
+        .cooking-step.completed .cooking-step-number {
+            background: var(--secondary);
+        }
+        .cooking-step-text {
+            font-size: 1.1rem; line-height: 1.6; display: inline;
+        }
+        .cooking-step-check {
+            float: right; margin-top: 5px;
+        }
+        .cooking-ingredients {
+            background: #fef3c7; border-radius: 15px; padding: 20px;
+            margin-bottom: 25px; border: 2px solid var(--border);
+        }
+        .cooking-ingredients h3 {
+            color: var(--primary-dark); margin-bottom: 15px;
+            font-family: 'Playfair Display', serif;
+        }
+        .cooking-ingredients ul {
+            list-style: none; padding: 0;
+        }
+        .cooking-ingredients li {
+            padding: 8px 0; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .cooking-ingredients li:last-child {
+            border-bottom: none;
+        }
+        .ingredient-check {
+            width: 20px; height: 20px; border: 2px solid var(--primary);
+            border-radius: 4px; cursor: pointer; flex-shrink: 0;
+        }
+        .ingredient-check.checked {
+            background: var(--secondary);
+            border-color: var(--secondary);
+            position: relative;
+        }
+        .ingredient-check.checked::after {
+            content: '✓'; color: white; position: absolute;
+            top: -2px; left: 3px; font-weight: bold;
+        }
+        
         /* Welcome */
         .welcome-screen {
             display: flex; flex-direction: column; align-items: center;
@@ -282,6 +376,9 @@
             </div>
             <div class="menu-item" onclick="showSection('galeria')">
                 <span>📸</span><span>Galería de Fotos</span>
+            </div>
+            <div class="menu-item" onclick="showSection('modo-cocina')">
+                <span>👨‍🍳</span><span>Modo Cocina</span>
             </div>
             <div class="menu-item" onclick="showSection('consultar-ia')">
                 <span>🤖</span><span>Consultar IA</span>
@@ -454,6 +551,25 @@
             </div>
         </div>
 
+        <div id="modo-cocina" class="section">
+            <div class="card">
+                <h2><span>👨‍🍳</span> Modo Cocina</h2>
+                
+                <div id="cookingModeContent">
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">🍳</div>
+                        <h3 style="color: var(--primary-dark); margin-bottom: 15px;">Selecciona una receta para comenzar</h3>
+                        <p style="color: var(--text-light); margin-bottom: 30px;">
+                            Ve a "Ver Recetas", selecciona una receta y presiona "Comenzar a Cocinar"
+                        </p>
+                        <button onclick="showSection('ver-recetas')" style="padding: 15px 40px;">
+                            📖 Ir a Mis Recetas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="consultar-ia" class="section">
             <div class="card">
                 <h2><span>🤖</span> Asistente IA</h2>
@@ -537,6 +653,11 @@
         let timerInterval = null;
         let remainingTime = 0;
         let photos = [];
+        let cookingTimer = null;
+        let cookingTimeRemaining = 0;
+        let currentCookingRecipe = null;
+        let currentStep = 0;
+        let checkedIngredients = [];
 
         function init() {
             renderRecipes();
@@ -697,6 +818,11 @@
                 <h2>${recipe.name}</h2>
                 <div class="category">${recipe.category}</div>
                 <p style="margin: 15px 0;">⏱️ ${recipe.time} minutos</p>
+                
+                <button onclick="startCookingMode(${recipe.id})" style="width: 100%; margin: 20px 0; background: var(--secondary); font-size: 1.2rem; padding: 18px;">
+                    👨‍🍳 Comenzar a Cocinar
+                </button>
+                
                 ${video}
                 <h3 style="color: var(--primary-dark); margin-top: 25px; font-family: 'Playfair Display', serif;">📝 Ingredientes:</h3>
                 <ul style="padding-left: 20px; line-height: 1.8;">
@@ -914,6 +1040,214 @@
         document.getElementById('recipeModal').addEventListener('click', (e) => {
             if (e.target.id === 'recipeModal') closeModal();
         });
+
+        // Funciones de Modo Cocina
+        function startCookingMode(recipeId) {
+            const recipe = db.getRecipes().find(r => r.id === recipeId);
+            if (!recipe) return;
+
+            currentCookingRecipe = recipe;
+            currentStep = 0;
+            checkedIngredients = [];
+            cookingTimeRemaining = recipe.time * 60; // Convertir minutos a segundos
+
+            closeModal();
+            showSection('modo-cocina');
+            renderCookingMode();
+        }
+
+        function renderCookingMode() {
+            if (!currentCookingRecipe) return;
+
+            const recipe = currentCookingRecipe;
+            const ings = recipe.ingredients.split('\n').filter(i => i.trim());
+            const steps = recipe.instructions.split('\n').filter(i => i.trim());
+
+            document.getElementById('cookingModeContent').innerHTML = `
+                <div class="cooking-mode">
+                    <div class="cooking-header">
+                        <h3 style="color: var(--primary-dark); font-family: 'Playfair Display', serif; font-size: 2rem; margin: 0;">
+                            ${recipe.name}
+                        </h3>
+                        <button onclick="exitCookingMode()" style="background: #dc2626;">
+                            ❌ Salir
+                        </button>
+                    </div>
+
+                    <div class="cooking-timer">
+                        <div style="font-size: 1.2rem; color: var(--text-light); margin-bottom: 10px;">
+                            ⏱️ Temporizador Total
+                        </div>
+                        <div class="time" id="cookingTime">${formatCookingTime(cookingTimeRemaining)}</div>
+                        <div class="cooking-controls">
+                            <button onclick="startCookingTimer()" id="cookingStartBtn">
+                                ▶️ Iniciar
+                            </button>
+                            <button onclick="pauseCookingTimer()">
+                                ⏸️ Pausar
+                            </button>
+                            <button onclick="resetCookingTimer()">
+                                🔄 Reiniciar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="cooking-ingredients">
+                        <h3>📝 Ingredientes Necesarios</h3>
+                        <ul>
+                            ${ings.map((ing, idx) => `
+                                <li>
+                                    <div class="ingredient-check ${checkedIngredients.includes(idx) ? 'checked' : ''}" 
+                                         onclick="toggleIngredient(${idx})">
+                                    </div>
+                                    <span style="flex: 1;">${ing}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="cooking-steps">
+                        <h3 style="color: var(--primary-dark); margin-bottom: 20px; font-family: 'Playfair Display', serif; font-size: 1.8rem;">
+                            👨‍🍳 Pasos de Preparación
+                        </h3>
+                        ${steps.map((step, idx) => `
+                            <div class="cooking-step ${idx < currentStep ? 'completed' : ''} ${idx === currentStep ? 'active' : ''}" 
+                                 id="step-${idx}">
+                                <span class="cooking-step-number">${idx + 1}</span>
+                                <span class="cooking-step-text">${step}</span>
+                                ${idx === currentStep ? `
+                                    <button class="cooking-step-check" onclick="completeStep()" 
+                                            style="padding: 8px 16px; font-size: 0.9rem;">
+                                        ✓ Completado
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    ${currentStep >= steps.length ? `
+                        <div style="background: linear-gradient(135deg, var(--secondary), #047857); color: white; 
+                                    padding: 30px; border-radius: 15px; text-align: center; margin-top: 30px;">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">🎉</div>
+                            <h3 style="font-size: 2rem; margin-bottom: 10px;">¡Receta Completada!</h3>
+                            <p style="font-size: 1.1rem; margin-bottom: 20px;">Disfruta de tu ${recipe.name}</p>
+                            <button onclick="exitCookingMode()" style="background: white; color: var(--secondary);">
+                                🏠 Volver al Inicio
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function formatCookingTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function startCookingTimer() {
+            if (cookingTimer) return;
+
+            const timeDisplay = document.getElementById('cookingTime');
+            if (timeDisplay) {
+                timeDisplay.classList.add('running');
+            }
+
+            cookingTimer = setInterval(() => {
+                if (cookingTimeRemaining > 0) {
+                    cookingTimeRemaining--;
+                    const timeDisplay = document.getElementById('cookingTime');
+                    if (timeDisplay) {
+                        timeDisplay.textContent = formatCookingTime(cookingTimeRemaining);
+                    }
+                } else {
+                    pauseCookingTimer();
+                    alert('⏰ ¡Tiempo de cocción completado!');
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate([200, 100, 200, 100, 200]);
+                    }
+                }
+            }, 1000);
+        }
+
+        function pauseCookingTimer() {
+            if (cookingTimer) {
+                clearInterval(cookingTimer);
+                cookingTimer = null;
+                const timeDisplay = document.getElementById('cookingTime');
+                if (timeDisplay) {
+                    timeDisplay.classList.remove('running');
+                }
+            }
+        }
+
+        function resetCookingTimer() {
+            pauseCookingTimer();
+            if (currentCookingRecipe) {
+                cookingTimeRemaining = currentCookingRecipe.time * 60;
+                const timeDisplay = document.getElementById('cookingTime');
+                if (timeDisplay) {
+                    timeDisplay.textContent = formatCookingTime(cookingTimeRemaining);
+                }
+            }
+        }
+
+        function toggleIngredient(index) {
+            const idx = checkedIngredients.indexOf(index);
+            if (idx > -1) {
+                checkedIngredients.splice(idx, 1);
+            } else {
+                checkedIngredients.push(index);
+            }
+            renderCookingMode();
+        }
+
+        function completeStep() {
+            if (!currentCookingRecipe) return;
+            
+            const steps = currentCookingRecipe.instructions.split('\n').filter(i => i.trim());
+            if (currentStep < steps.length) {
+                currentStep++;
+                renderCookingMode();
+                
+                // Scroll al siguiente paso
+                setTimeout(() => {
+                    const nextStep = document.getElementById(`step-${currentStep}`);
+                    if (nextStep) {
+                        nextStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 100);
+            }
+        }
+
+        function exitCookingMode() {
+            if (confirm('¿Estás seguro de que quieres salir del modo cocina?')) {
+                pauseCookingTimer();
+                currentCookingRecipe = null;
+                currentStep = 0;
+                checkedIngredients = [];
+                cookingTimeRemaining = 0;
+                
+                document.getElementById('cookingModeContent').innerHTML = `
+                    <div style="text-align: center; padding: 60px 20px;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">🍳</div>
+                        <h3 style="color: var(--primary-dark); margin-bottom: 15px;">Selecciona una receta para comenzar</h3>
+                        <p style="color: var(--text-light); margin-bottom: 30px;">
+                            Ve a "Ver Recetas", selecciona una receta y presiona "Comenzar a Cocinar"
+                        </p>
+                        <button onclick="showSection('ver-recetas')" style="padding: 15px 40px;">
+                            📖 Ir a Mis Recetas
+                        </button>
+                    </div>
+                `;
+            }
+        }
 
         // Funciones de galería de fotos
         function loadPhotos() {

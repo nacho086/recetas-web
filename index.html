@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#d97706">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://api.anthropic.com https://fonts.googleapis.com https://fonts.gstatic.com https://www.youtube.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob: https:; connect-src 'self' https://api.anthropic.com; frame-src 'self' https://www.youtube.com;">
+    <title>Mi Libro de Recetas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --primary: #d97706; --primary-dark: #b45309; --secondary: #059669;
+            --bg-card: #ffffff; --text-dark: #1f2937; --text-light: #6b7280;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1); --border: #fed7aa;
+        }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+            color: var(--text-dark); min-height: 100vh; overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+        .hamburger-menu { position: fixed; top: 15px; left: 15px; z-index: 1000; display: block; }
+        .menu-button {
+            background: var(--bg-card); border: 2px solid var(--primary); width: 50px; height: 50px;
+            border-radius: 12px; cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 5px; box-shadow: var(--shadow);
+        }
+        .menu-button span { width: 25px; height: 2.5px; background: var(--primary); border-radius: 2px; transition: all 0.3s; }
+        .menu-button.active span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
+        .menu-button.active span:nth-child(2) { opacity: 0; }
+        .menu-button.active span:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+        .dropdown-menu {
+            position: absolute; top: 60px; left: 0; background: var(--bg-card); border: 2px solid var(--border);
+            border-radius: 12px; min-width: 200px; box-shadow: var(--shadow); opacity: 0;
+            visibility: hidden; transform: translateY(-10px); transition: all 0.3s; max-height: 80vh; overflow-y: auto;
+        }
+        .dropdown-menu.active { opacity: 1; visibility: visible; transform: translateY(0); }
+        .menu-item {
+            padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 12px;
+            font-weight: 600; font-size: 0.95rem; transition: all 0.3s; border-bottom: 1px solid #fef3c7;
+        }
+        .menu-item:last-child { border-bottom: none; }
+        .menu-item:active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+        .container { max-width: 100%; margin: 0 auto; padding: 20px 15px; padding-top: 25px; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .card {
+            background: var(--bg-card); border-radius: 15px; padding: 20px; box-shadow: var(--shadow);
+            border: 2px solid var(--border); position: relative; overflow: hidden; margin-top: 15px;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+        .card h2 {
+            font-family: 'Playfair Display', serif; font-size: 1.75rem; color: var(--primary-dark);
+            margin-bottom: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 0.95rem; }
+        input, textarea, select {
+            width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-size: 16px; transition: all 0.3s; background: #fffbeb;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+        }
+        textarea { resize: vertical; min-height: 100px; }
+        button {
+            background: var(--primary); color: white; border: none; padding: 14px 24px;
+            border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer;
+            transition: all 0.3s; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);
+            font-family: 'DM Sans', sans-serif; width: 100%;
+        }
+        button:active { transform: scale(0.98); }
+        .timer-display {
+            font-family: 'Playfair Display', serif; font-size: clamp(3rem, 12vw, 5rem);
+            font-weight: 900; color: var(--primary-dark); margin: 30px 0; text-align: center;
+            line-height: 1.2;
+        }
+        .timer-controls {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 30px 0;
+        }
+        .timer-preset {
+            background: white; border: 2px solid var(--border); padding: 15px; border-radius: 12px;
+            cursor: pointer; transition: all 0.3s; text-align: center;
+        }
+        .timer-preset:active { background: var(--primary); color: white; transform: scale(0.98); }
+        .timer-preset h4 { font-size: 1.1rem; margin-bottom: 5px; }
+        .timer-preset p { font-size: 0.85rem; opacity: 0.8; }
+        .timer-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 25px 0; }
+        .timer-custom > div { width: 100%; }
+        .timer-custom button { grid-column: 1 / -1; }
+        .timer-running { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+        .recipes-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+            gap: 15px; max-height: 70vh; overflow-y: auto; padding: 5px;
+        }
+        .recipe-item {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 18px;
+            border-radius: 12px; border: 2px solid var(--border); cursor: pointer;
+            transition: all 0.3s; position: relative; min-height: 140px; display: flex; flex-direction: column;
+        }
+        .recipe-item:active { transform: scale(0.98); }
+        .recipe-item .category {
+            display: inline-block; background: var(--secondary); color: white; padding: 5px 12px;
+            border-radius: 15px; font-size: 0.8rem; font-weight: 600; margin-bottom: 8px; width: fit-content;
+        }
+        .recipe-item .video-badge {
+            position: absolute; top: 12px; left: 12px; background: #dc2626; color: white;
+            padding: 5px 10px; border-radius: 15px; font-size: 0.75rem; font-weight: 600;
+        }
+        .recipe-item .delete-btn {
+            position: absolute; top: 12px; right: 12px; background: #dc2626; color: white;
+            border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+            font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+        }
+        .recipe-item h3 {
+            font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--primary-dark);
+            margin: 8px 0; flex-grow: 1; line-height: 1.3; word-wrap: break-word;
+        }
+        .recipe-item .time {
+            color: var(--text-light); font-size: 0.9rem; display: flex;
+            align-items: center; gap: 5px; margin-top: auto;
+        }
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); z-index: 1000; align-items: flex-start;
+            justify-content: center; backdrop-filter: blur(5px); padding: 20px 10px; overflow-y: auto;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--bg-card); border-radius: 15px; padding: 25px 20px; width: 100%;
+            max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--border); position: relative; margin: auto;
+        }
+        .modal-content h2 {
+            font-family: 'Playfair Display', serif; color: var(--primary-dark);
+            font-size: 1.8rem; margin-bottom: 15px; padding-right: 40px; word-wrap: break-word;
+        }
+        .modal-content .close {
+            position: absolute; top: 15px; right: 15px; background: var(--primary);
+            color: white; border: none; width: 40px; height: 40px; border-radius: 50%;
+            cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center;
+        }
+        .video-container {
+            position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;
+            margin: 20px 0; border-radius: 12px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .video-container iframe {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; border-radius: 12px;
+        }
+        .chat-messages {
+            background: #fffbeb; border-radius: 12px; padding: 15px; max-height: 50vh;
+            overflow-y: auto; margin-bottom: 20px; border: 2px solid var(--border);
+        }
+        .chat-message {
+            margin-bottom: 15px; padding: 12px 15px; border-radius: 12px;
+            line-height: 1.5; word-wrap: break-word; font-size: 0.95rem;
+        }
+        .chat-message.user {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white; margin-left: 10%; border-bottom-right-radius: 5px;
+        }
+        .chat-message.assistant {
+            background: white; border: 2px solid var(--border); margin-right: 10%;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-input-group { display: flex; gap: 10px; }
+        .chat-input-group input { flex: 1; min-width: 0; }
+        .chat-input-group button { width: auto; min-width: 80px; }
+        .welcome-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 70vh; text-align: center; padding: 20px 10px;
+        }
+        .welcome-screen h1 {
+            font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 8vw, 4rem);
+            font-weight: 900; color: var(--primary-dark); margin-bottom: 15px; line-height: 1.1;
+        }
+        .welcome-features {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: 15px; margin-top: 30px; width: 100%;
+        }
+        .feature-card {
+            background: var(--bg-card); padding: 25px 15px; border-radius: 15px;
+            border: 2px solid var(--border); box-shadow: var(--shadow); cursor: pointer;
+            transition: all 0.3s; position: relative; overflow: hidden;
+        }
+        .feature-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 13px 13px 0 0;
+        }
+        .feature-card:active { transform: scale(0.98); }
+        .feature-card .icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+        .feature-card h3 {
+            font-family: 'Playfair Display', serif; font-size: 1.3rem;
+            color: var(--primary-dark); margin-bottom: 10px; line-height: 1.2;
+        }
+        .feature-card p { color: var(--text-light); line-height: 1.4; font-size: 0.9rem; }
+        .photo-upload {
+            border: 2px dashed var(--border); border-radius: 12px; padding: 30px 20px;
+            text-align: center; cursor: pointer; transition: all 0.3s; background: #fffbeb; margin-bottom: 20px;
+        }
+        .photo-upload input { display: none; }
+        .photo-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+            gap: 12px; margin-top: 20px;
+        }
+        .photo-item {
+            position: relative; border-radius: 12px; overflow: hidden;
+            box-shadow: var(--shadow); transition: all 0.3s; aspect-ratio: 1;
+        }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+        .photo-item .photo-delete {
+            position: absolute; top: 8px; right: 8px; background: rgba(220, 38, 38, 0.9);
+            color: white; border: none; width: 28px; height: 28px; border-radius: 50%;
+            cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+        }
+        .photo-item .photo-name {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            color: white; padding: 12px 8px 8px; font-size: 0.85rem; font-weight: 600;
+        }
+        .cooking-mode { background: var(--bg-card); border-radius: 15px; padding: 0; margin-top: 15px; }
+        .cooking-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px; padding: 20px 20px 0;
+        }
+        .cooking-header h3 {
+            color: var(--primary-dark); font-family: 'Playfair Display', serif;
+            font-size: 1.6rem; margin: 0; flex: 1; word-wrap: break-word; min-width: 200px;
+        }
+        .cooking-header button { width: auto; padding: 10px 20px; }
+        .cooking-timer {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 2px solid var(--border); border-radius: 12px; padding: 20px;
+            text-align: center; margin: 0 20px 20px;
+        }
+        .cooking-timer .time {
+            font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 10vw, 3.5rem);
+            font-weight: 900; color: var(--primary-dark); margin: 15px 0; line-height: 1.1;
+        }
+        .cooking-timer .time.running { animation: pulse 2s infinite; }
+        .cooking-controls {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px; margin-top: 15px;
+        }
+        .cooking-controls button { padding: 10px 15px; font-size: 0.9rem; }
+        .cooking-ingredients {
+            background: #fef3c7; border-radius: 12px; padding: 18px; margin: 0 20px 20px;
+            border: 2px solid var(--border);
+        }
+        .cooking-ingredients h3 {
+            color: var(--primary-dark); margin-bottom: 12px;
+            font-family: 'Playfair Display', serif; font-size: 1.4rem;
+        }
+        .cooking-ingredients ul { list-style: none; padding: 0; }
+        .cooking-ingredients li {
+            padding: 10px 0; border-bottom: 1px solid var(--border); display: flex;
+            align-items: flex-start; gap: 10px; word-wrap: break-word;
+        }
+        .cooking-ingredients li:last-child { border-bottom: none; }
+        .ingredient-check {
+            width: 22px; height: 22px; border: 2px solid var(--primary);
+            border-radius: 4px; cursor: pointer; flex-shrink: 0; margin-top: 2px;
+        }
+        .ingredient-check.checked {
+            background: var(--secondary); border-color: var(--secondary); position: relative;
+        }
+        .ingredient-check.checked::after {
+            content: '✓'; color: white; position: absolute; top: -2px; left: 3px;
+            font-weight: bold; font-size: 0.9rem;
+        }
+        .cooking-steps {
+            background: white; border-radius: 12px; padding: 20px;
+            border: 2px solid var(--border); margin: 0 20px 20px;
+        }
+        .cooking-steps h3 {
+            color: var(--primary-dark); margin-bottom: 18px;
+            font-family: 'Playfair Display', serif; font-size: 1.5rem;
+        }
+        .cooking-step {
+            padding: 15px; border-left: 4px solid var(--border); margin-bottom: 12px;
+            background: #fffbeb; border-radius: 0 10px 10px 0; transition: all 0.3s;
+        }
+        .cooking-step.completed {
+            opacity: 0.6; border-left-color: var(--secondary); background: #f0fdf4;
+        }
+        .cooking-step.active {
+            border-left-color: var(--primary); background: #fef3c7;
+            box-shadow: 0 2px 4px rgba(217, 119, 6, 0.2);
+        }
+        .cooking-step-number {
+            display: inline-block; background: var(--primary); color: white;
+            width: 28px; height: 28px; border-radius: 50%; text-align: center;
+            line-height: 28px; font-weight: 700; margin-right: 10px;
+            font-size: 0.9rem; flex-shrink: 0;
+        }
+        .cooking-step.completed .cooking-step-number { background: var(--secondary); }
+        .cooking-step-text {
+            font-size: 1rem; line-height: 1.5; display: inline; word-wrap: break-word;
+        }
+        .cooking-step-check { margin-top: 12px; width: 100%; padding: 10px 20px; font-size: 0.9rem; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-light); }
+        .empty-state .icon { font-size: 3.5rem; margin-bottom: 12px; opacity: 0.5; }
+        @media (min-width: 768px) {
+            .container { padding: 30px 25px; max-width: 1200px; }
+            .card { padding: 30px; }
+            .card h2 { font-size: 2.2rem; }
+            .modal-content { padding: 35px 30px; }
+            .recipes-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+            .chat-message.user { margin-left: 20%; }
+            .chat-message.assistant { margin-right: 20%; }
+            .cooking-header h3 { font-size: 2rem; }
+            .cooking-timer .time { font-size: 4rem; }
+            button { width: auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hamburger-menu" id="hamburgerMenu">
+        <div class="menu-button" id="menuButton" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="dropdown-menu" id="dropdownMenu">
+            <div class="menu-item" onclick="showSection('welcome')"><span>🏠</span><span>Inicio</span></div>
+            <div class="menu-item" onclick="showSection('nueva-receta')"><span>✨</span><span>Nueva Receta</span></div>
+            <div class="menu-item" onclick="showSection('ver-recetas')"><span>📖</span><span>Ver Recetas</span></div>
+            <div class="menu-item" onclick="showSection('temporizador')"><span>⏱️</span><span>Temporizador</span></div>
+            <div class="menu-item" onclick="showSection('galeria')"><span>📸</span><span>Galería de Fotos</span></div>
+            <div class="menu-item" onclick="showSection('modo-cocina')"><span>👨‍🍳</span><span>Modo Cocina</span></div>
+            <div class="menu-item" onclick="showSection('consultar-ia')"><span>🤖</span><span>Consultar IA</span></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="welcome" class="section active">
+            <div class="welcome-screen">
+                <h1>🍳 Mi Libro de Recetas</h1>
+                <p style="font-size: clamp(1rem, 4vw, 1.3rem); color: var(--text-light); margin-bottom: 30px;">
+                    Tu cocina digital perfecta
+                </p>
+                <div class="welcome-features">
+                    <div class="feature-card" onclick="showSection('nueva-receta')">
+                        <span class="icon">✨</span>
+                        <h3>Guardar Recetas</h3>
+                        <p>Almacena recetas con ingredientes y videos</p>
+                    </div>
+                    <div class="feature-card" onclick="showSection('ver-recetas')">
+                        <span class="icon">📖</span>
+                        <h3>Explorar Colección</h3>
+                        <p>Navega por tu biblioteca</p>
+                    </div>
+                    <div class="feature-card" onclick="showSection('temporizador')">
+                        <span class="icon">⏱️</span>
+                        <h3>Temporizador</h3>
+                        <p>Controla tiempos de cocción</p>
+                    </div>
+                    <div class="feature-card" onclick="showSection('galeria')">
+                        <span class="icon">📸</span>
+                        <h3>Galería de Fotos</h3>
+                        <p>Guarda fotos de tus platillos</p>
+                    </div>
+                    <div class="feature-card" onclick="showSection('modo-cocina')">
+                        <span class="icon">👨‍🍳</span>
+                        <h3>Modo Cocina</h3>
+                        <p>Cocina paso a paso</p>
+                    </div>
+                    <div class="feature-card" onclick="showSection('consultar-ia')">
+                        <span class="icon">🤖</span>
+                        <h3>Asistente IA</h3>
+                        <p>Consejos de cocina</p>
+                    </div>
+                </div>
+                <button style="margin-top: 30px; padding: 15px 35px; font-size: 1.1rem; width: auto;" onclick="showSection('nueva-receta')">
+                    Comenzar →
+                </button>
+            </div>
+        </div>
+
+        <div id="nueva-receta" class="section">
+            <div class="card">
+                <h2><span>✨</span> Agregar Nueva Receta</h2>
+                <form id="recipeForm">
+                    <div class="form-group">
+                        <label for="recipeName">Nombre de la Receta</label>
+                        <input type="text" id="recipeName" required placeholder="Ej: Pasta Carbonara">
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Categoría</label>
+                        <select id="category" required>
+                            <option value="">Selecciona una categoría</option>
+                            <option value="Desayuno">🌅 Desayuno</option>
+                            <option value="Almuerzo">🍽️ Almuerzo</option>
+                            <option value="Cena">🌙 Cena</option>
+                            <option value="Postre">🍰 Postre</option>
+                            <option value="Snack">🍿 Snack</option>
+                            <option value="Bebida">🥤 Bebida</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="time">Tiempo de preparación (minutos)</label>
+                        <input type="number" id="time" required placeholder="30" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="videoUrl">Link de YouTube (opcional)</label>
+                        <input type="url" id="videoUrl" placeholder="https://www.youtube.com/watch?v=...">
+                        <small style="color: var(--text-light);">Agrega un video tutorial</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="ingredients">Ingredientes (uno por línea)</label>
+                        <textarea id="ingredients" required placeholder="200g de pasta&#10;100g de panceta&#10;2 huevos"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="instructions">Instrucciones</label>
+                        <textarea id="instructions" required placeholder="1. Hierve la pasta...&#10;2. Fríe la panceta..."></textarea>
+                    </div>
+                    <button type="submit">💾 Guardar Receta</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="ver-recetas" class="section">
+            <div class="card">
+                <h2><span>📖</span> Mis Recetas</h2>
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="searchInput" placeholder="🔍 Buscar recetas...">
+                </div>
+                <div class="recipes-grid" id="recipesList">
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>No hay recetas guardadas</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="temporizador" class="section">
+            <div class="card">
+                <h2><span>⏱️</span> Temporizador</h2>
+                <div style="text-align: center;">
+                    <div class="timer-display" id="timerDisplay">00:00</div>
+                    <div class="timer-controls">
+                        <div class="timer-preset" onclick="setTimer(3)"><h4>3 min</h4><p>Huevo</p></div>
+                        <div class="timer-preset" onclick="setTimer(5)"><h4>5 min</h4><p>Arroz</p></div>
+                        <div class="timer-preset" onclick="setTimer(10)"><h4>10 min</h4><p>Verduras</p></div>
+                        <div class="timer-preset" onclick="setTimer(15)"><h4>15 min</h4><p>Hornear</p></div>
+                        <div class="timer-preset" onclick="setTimer(30)"><h4>30 min</h4><p>Asado</p></div>
+                    </div>
+                    <div class="timer-custom">
+                        <div><label>Minutos</label><input type="number" id="customMinutes" min="0" value="0"></div>
+                        <div><label>Segundos</label><input type="number" id="customSeconds" min="0" max="59" value="0"></div>
+                        <button onclick="setCustomTimer()">⏰ Personalizado</button>
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px;">
+                        <button onclick="startTimer()" style="min-width: 120px;">▶️ Iniciar</button>
+                        <button onclick="pauseTimer()" style="min-width: 120px;">⏸️ Pausar</button>
+                        <button onclick="resetTimer()" style="min-width: 120px;">🔄 Reiniciar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="galeria" class="section">
+            <div class="card">
+                <h2><span>📸</span> Galería de Fotos</h2>
+                <div class="photo-upload" onclick="document.getElementById('photoInput').click()">
+                    <input type="file" id="photoInput" accept="image/*" onchange="handlePhotoUpload(event)" multiple>
+                    <div style="font-size: 3rem; margin-bottom: 15px;">📷</div>
+                    <h3 style="color: var(--primary-dark); margin-bottom: 10px;">Subir Fotos</h3>
+                    <p style="color: var(--text-light);">Haz clic para seleccionar fotos</p>
+                </div>
+                <div id="photoGallery" class="photo-grid"></div>
+            </div>
+        </div>
+
+        <div id="modo-cocina" class="section">
+            <div class="card">
+                <h2><span>👨‍🍳</span> Modo Cocina</h2>
+                <div id="cookingModeContent">
+                    <div class="empty-state">
+                        <div class="icon">🍳</div>
+                        <h3 style="color: var(--primary-dark); margin-bottom: 15px;">Selecciona una receta</h3>
+                        <p style="margin-bottom: 30px;">Ve a "Ver Recetas" y presiona "Comenzar a Cocinar"</p>
+                        <button onclick="showSection('ver-recetas')" style="padding: 15px 40px; width: auto;">
+                            📖 Ir a Mis Recetas
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="consultar-ia" class="section">
+            <div class="card">
+                <h2><span>🤖</span> Asistente IA</h2>
+                <div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 2px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div><strong>Conexión:</strong> <span id="connectionStatus"><span style="color: var(--secondary);">●</span> Verificando...</span></div>
+                        <button onclick="testConnection()" style="padding: 8px 16px; font-size: 0.9rem; width: auto;">🔄 Probar</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-message assistant">
+                        <strong>Asistente:</strong> ¡Hola! 👋 Soy tu asistente de cocina. Puedo ayudarte con sugerencias de recetas, técnicas de cocción, tiempos de preparación, sustitutos de ingredientes y mucho más. ¿En qué puedo ayudarte hoy?
+                    </div>
+                </div>
+                <div id="chatLoading" style="display: none; text-align: center; padding: 15px; color: var(--primary);">Pensando...</div>
+                <div class="chat-input-group">
+                    <input type="text" id="chatInput" placeholder="Pregunta algo..." />
+                    <button onclick="sendMessage()">📤 Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="recipeModal">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal()">×</button>
+            <div id="recipeDetail"></div>
+        </div>
+    </div>
+
+    <script>
+        class RecipeDB {
+            constructor() { this.storageKey = 'recipeDB'; }
+            getRecipes() {
+                try { return JSON.parse(localStorage.getItem(this.storageKey)) || []; }
+                catch(e) { return []; }
+            }
+            saveRecipes(recipes) {
+                try { localStorage.setItem(this.storageKey, JSON.stringify(recipes)); return true; }
+                catch(e) { return false; }
+            }
+            addRecipe(recipe) {
+                const recipes = this.getRecipes();
+                recipe.id = Date.now();
+                recipes.push(recipe);
+                return this.saveRecipes(recipes) ? recipe : null;
+            }
+            deleteRecipe(id) {
+                const recipes = this.getRecipes();
+                this.saveRecipes(recipes.filter(r => r.id !== id));
+            }
+            searchRecipes(query) {
+                const recipes = this.getRecipes();
+                const q = query.toLowerCase();
+                return recipes.filter(r => 
+                    r.name.toLowerCase().includes(q) ||
+                    r.category.toLowerCase().includes(q) ||
+                    r.ingredients.toLowerCase().includes(q)
+                );
+            }
+        }
+
+        const db = new RecipeDB();
+        let conversationHistory = [];
+        let timerInterval = null;
+        let remainingTime = 0;
+        let photos = [];
+        let cookingTimer = null;
+        let cookingTimeRemaining = 0;
+        let currentCookingRecipe = null;
+        let currentStep = 0;
+        let checkedIngredients = [];
+
+        function init() {
+            renderRecipes();
+            loadPhotos();
+            document.getElementById('recipeForm').addEventListener('submit', handleSubmit);
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+            });
+        }
+
+        function toggleMenu() {
+            document.getElementById('menuButton').classList.toggle('active');
+            document.getElementById('dropdownMenu').classList.toggle('active');
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            
+            document.getElementById('menuButton').classList.remove('active');
+            document.getElementById('dropdownMenu').classList.remove('active');
+            
+            if (sectionId === 'ver-recetas') renderRecipes();
+            if (sectionId === 'galeria') renderPhotos();
+            if (sectionId === 'consultar-ia') setTimeout(checkInitialConnection, 100);
+        }
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+        function updateDisplay() {
+            document.getElementById('timerDisplay').textContent = formatTime(remainingTime);
+        }
+        function setTimer(minutes) {
+            resetTimer();
+            remainingTime = minutes * 60;
+            updateDisplay();
+        }
+        function setCustomTimer() {
+            const m = parseInt(document.getElementById('customMinutes').value) || 0;
+            const s = parseInt(document.getElementById('customSeconds').value) || 0;
+            if (m === 0 && s === 0) return alert('Ingresa un tiempo válido');
+            resetTimer();
+            remainingTime = (m * 60) + s;
+            updateDisplay();
+        }
+        function startTimer() {
+            if (remainingTime === 0) return alert('Selecciona un tiempo primero');
+            if (timerInterval) return;
+            document.getElementById('timerDisplay').classList.add('timer-running');
+            timerInterval = setInterval(() => {
+                if (remainingTime > 0) {
+                    remainingTime--;
+                    updateDisplay();
+                } else {
+                    resetTimer();
+                    alert('⏰ ¡Tiempo terminado!');
+                    if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+                }
+            }, 1000);
+        }
+        function pauseTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                document.getElementById('timerDisplay').classList.remove('timer-running');
+            }
+        }
+        function resetTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = null;
+            remainingTime = 0;
+            updateDisplay();
+            document.getElementById('timerDisplay').classList.remove('timer-running');
+        }
+
+        function getYouTubeVideoId(url) {
+            if (!url) return null;
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                /^([a-zA-Z0-9_-]{11})$/
+            ];
+            for (let p of patterns) {
+                const m = url.match(p);
+                if (m) return m[1];
+            }
+            return null;
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            const recipe = {
+                name: document.getElementById('recipeName').value,
+                category: document.getElementById('category').value,
+                time: document.getElementById('time').value,
+                videoUrl: document.getElementById('videoUrl').value,
+                ingredients: document.getElementById('ingredients').value,
+                instructions: document.getElementById('instructions').value
+            };
+            if (db.addRecipe(recipe)) {
+                e.target.reset();
+                alert('¡Receta guardada! 🎉');
+                setTimeout(() => showSection('ver-recetas'), 500);
+            }
+        }
+
+        function renderRecipes(recipes = null) {
+            const list = document.getElementById('recipesList');
+            const items = recipes || db.getRecipes();
+            if (items.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>No hay recetas</p></div>';
+                return;
+            }
+            list.innerHTML = items.map(r => `
+                <div class="recipe-item" onclick="showRecipeDetail(${r.id})">
+                    ${r.videoUrl ? '<div class="video-badge">📹 Video</div>' : ''}
+                    <button class="delete-btn" onclick="deleteRecipe(event, ${r.id})">×</button>
+                    <div class="category">${r.category}</div>
+                    <h3>${r.name}</h3>
+                    <div class="time">⏱️ ${r.time} minutos</div>
+                </div>
+            `).join('');
+        }
+
+        function handleSearch(e) {
+            const query = e.target.value;
+            renderRecipes(query.trim() ? db.searchRecipes(query) : null);
+        }
+
+        function showRecipeDetail(id) {
+            const recipe = db.getRecipes().find(r => r.id === id);
+            if (!recipe) return;
+            
+            const ings = recipe.ingredients.split('\n').filter(i => i.trim());
+            const insts = recipe.instructions.split('\n').filter(i => i.trim());
+            
+            let video = '';
+            if (recipe.videoUrl) {
+                const vid = getYouTubeVideoId(recipe.videoUrl);
+                if (vid) {
+                    video = `
+                        <h3 style="color: var(--primary-dark); margin-top: 25px; font-family: 'Playfair Display', serif;">📹 Video:</h3>
+                        <div class="video-container">
+                            <iframe src="https://www.youtube.com/embed/${vid}" allowfullscreen></iframe>
+                        </div>
+                    `;
+                }
+            }
+            
+            document.getElementById('recipeDetail').innerHTML = `
+                <h2>${recipe.name}</h2>
+                <div class="category">${recipe.category}</div>
+                <p style="margin: 15px 0;">⏱️ ${recipe.time} minutos</p>
+                
+                <button onclick="startCookingMode(${recipe.id})" style="width: 100%; margin: 20px 0; background: var(--secondary); font-size: 1.1rem; padding: 16px;">
+                    👨‍🍳 Comenzar a Cocinar
+                </button>
+                
+                ${video}
+                <h3 style="color: var(--primary-dark); margin-top: 25px; font-family: 'Playfair Display', serif;">📝 Ingredientes:</h3>
+                <ul style="padding-left: 20px; line-height: 1.8;">
+                    ${ings.map(i => `<li>${i}</li>`).join('')}
+                </ul>
+                <h3 style="color: var(--primary-dark); margin-top: 25px; font-family: 'Playfair Display', serif;">👨‍🍳 Instrucciones:</h3>
+                <ol style="padding-left: 20px; line-height: 1.8;">
+                    ${insts.map(i => `<li style="margin: 12px 0;">${i}</li>`).join('')}
+                </ol>
+            `;
+            document.getElementById('recipeModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('recipeModal').classList.remove('active');
+        }
+
+        function deleteRecipe(event, id) {
+            event.stopPropagation();
+            if (confirm('¿Eliminar esta receta?')) {
+                db.deleteRecipe(id);
+                renderRecipes();
+            }
+        }
+
+        function startCookingMode(recipeId) {
+            const recipe = db.getRecipes().find(r => r.id === recipeId);
+            if (!recipe) return;
+
+            currentCookingRecipe = recipe;
+            currentStep = 0;
+            checkedIngredients = [];
+            cookingTimeRemaining = recipe.time * 60;
+
+            closeModal();
+            showSection('modo-cocina');
+            renderCookingMode();
+        }
+
+        function renderCookingMode() {
+            if (!currentCookingRecipe) return;
+
+            const recipe = currentCookingRecipe;
+            const ings = recipe.ingredients.split('\n').filter(i => i.trim());
+            const steps = recipe.instructions.split('\n').filter(i => i.trim());
+
+            document.getElementById('cookingModeContent').innerHTML = `
+                <div class="cooking-mode">
+                    <div class="cooking-header">
+                        <h3>${recipe.name}</h3>
+                        <button onclick="exitCookingMode()" style="background: #dc2626;">❌ Salir</button>
+                    </div>
+
+                    <div class="cooking-timer">
+                        <div style="font-size: 1.1rem; color: var(--text-light); margin-bottom: 10px;">⏱️ Temporizador</div>
+                        <div class="time" id="cookingTime">${formatCookingTime(cookingTimeRemaining)}</div>
+                        <div class="cooking-controls">
+                            <button onclick="startCookingTimer()">▶️ Iniciar</button>
+                            <button onclick="pauseCookingTimer()">⏸️ Pausar</button>
+                            <button onclick="resetCookingTimer()">🔄 Reiniciar</button>
+                        </div>
+                    </div>
+
+                    <div class="cooking-ingredients">
+                        <h3>📝 Ingredientes</h3>
+                        <ul>
+                            ${ings.map((ing, idx) => `
+                                <li>
+                                    <div class="ingredient-check ${checkedIngredients.includes(idx) ? 'checked' : ''}" 
+                                         onclick="toggleIngredient(${idx})"></div>
+                                    <span style="flex: 1;">${ing}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+
+                    <div class="cooking-steps">
+                        <h3>👨‍🍳 Pasos</h3>
+                        ${steps.map((step, idx) => `
+                            <div class="cooking-step ${idx < currentStep ? 'completed' : ''} ${idx === currentStep ? 'active' : ''}" 
+                                 id="step-${idx}">
+                                <span class="cooking-step-number">${idx + 1}</span>
+                                <span class="cooking-step-text">${step}</span>
+                                ${idx === currentStep ? `
+                                    <button class="cooking-step-check" onclick="completeStep()">✓ Completado</button>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    ${currentStep >= steps.length ? `
+                        <div style="background: linear-gradient(135deg, var(--secondary), #047857); color: white; 
+                                    padding: 30px; border-radius: 15px; text-align: center; margin: 0 20px 20px;">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">🎉</div>
+                            <h3 style="font-size: 2rem; margin-bottom: 10px;">¡Completado!</h3>
+                            <p style="font-size: 1.1rem; margin-bottom: 20px;">Disfruta de tu ${recipe.name}</p>
+                            <button onclick="exitCookingMode()" style="background: white; color: var(--secondary); width: auto;">
+                                🏠 Volver
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function formatCookingTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            if (hours > 0) {
+                return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function startCookingTimer() {
+            if (cookingTimer) return;
+            const timeDisplay = document.getElementById('cookingTime');
+            if (timeDisplay) timeDisplay.classList.add('running');
+            cookingTimer = setInterval(() => {
+                if (cookingTimeRemaining > 0) {
+                    cookingTimeRemaining--;
+                    const timeDisplay = document.getElementById('cookingTime');
+                    if (timeDisplay) timeDisplay.textContent = formatCookingTime(cookingTimeRemaining);
+                } else {
+                    pauseCookingTimer();
+                    alert('⏰ ¡Tiempo completado!');
+                    if ('vibrate' in navigator) navigator.vibrate([200, 100, 200]);
+                }
+            }, 1000);
+        }
+
+        function pauseCookingTimer() {
+            if (cookingTimer) {
+                clearInterval(cookingTimer);
+                cookingTimer = null;
+                const timeDisplay = document.getElementById('cookingTime');
+                if (timeDisplay) timeDisplay.classList.remove('running');
+            }
+        }
+
+        function resetCookingTimer() {
+            pauseCookingTimer();
+            if (currentCookingRecipe) {
+                cookingTimeRemaining = currentCookingRecipe.time * 60;
+                const timeDisplay = document.getElementById('cookingTime');
+                if (timeDisplay) timeDisplay.textContent = formatCookingTime(cookingTimeRemaining);
+            }
+        }
+
+        function toggleIngredient(index) {
+            const idx = checkedIngredients.indexOf(index);
+            if (idx > -1) {
+                checkedIngredients.splice(idx, 1);
+            } else {
+                checkedIngredients.push(index);
+            }
+            renderCookingMode();
+        }
+
+        function completeStep() {
+            if (!currentCookingRecipe) return;
+            const steps = currentCookingRecipe.instructions.split('\n').filter(i => i.trim());
+            if (currentStep < steps.length) {
+                currentStep++;
+                renderCookingMode();
+                setTimeout(() => {
+                    const nextStep = document.getElementById(`step-${currentStep}`);
+                    if (nextStep) nextStep.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100);
+            }
+        }
+
+        function exitCookingMode() {
+            if (confirm('¿Salir del modo cocina?')) {
+                pauseCookingTimer();
+                currentCookingRecipe = null;
+                currentStep = 0;
+                checkedIngredients = [];
+                cookingTimeRemaining = 0;
+                document.getElementById('cookingModeContent').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🍳</div>
+                        <h3 style="color: var(--primary-dark); margin-bottom: 15px;">Selecciona una receta</h3>
+                        <p style="margin-bottom: 30px;">Ve a "Ver Recetas" y presiona "Comenzar a Cocinar"</p>
+                        <button onclick="showSection('ver-recetas')" style="padding: 15px 40px; width: auto;">📖 Ir a Mis Recetas</button>
+                    </div>
+                `;
+            }
+        }
+
+        function loadPhotos() {
+            try {
+                const stored = localStorage.getItem('photoGallery');
+                photos = stored ? JSON.parse(stored) : [];
+                renderPhotos();
+            } catch(e) {
+                photos = [];
+            }
+        }
+
+        function savePhotos() {
+            try {
+                localStorage.setItem('photoGallery', JSON.stringify(photos));
+                return true;
+            } catch(e) {
+                alert('Error al guardar foto');
+                return false;
+            }
+        }
+
+        function handlePhotoUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) {
+                    alert('Solo imágenes');
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Imagen muy grande. Máximo 5MB');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const photo = {
+                        id: Date.now() + Math.random(),
+                        name: file.name.replace(/\.[^/.]+$/, ""),
+                        data: e.target.result,
+                        date: new Date().toISOString()
+                    };
+                    photos.push(photo);
+                    savePhotos();
+                    renderPhotos();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            event.target.value = '';
+        }
+
+        function renderPhotos() {
+            const gallery = document.getElementById('photoGallery');
+            if (!gallery) return;
+
+            if (photos.length === 0) {
+                gallery.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <div class="icon">📷</div>
+                        <p>No hay fotos. ¡Sube la primera!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            gallery.innerHTML = photos.map(photo => `
+                <div class="photo-item">
+                    <img src="${photo.data}" alt="${photo.name}" onclick="showPhotoModal('${photo.id}')">
+                    <button class="photo-delete" onclick="deletePhoto(event, '${photo.id}')">×</button>
+                    <div class="photo-name">${photo.name}</div>
+                </div>
+            `).join('');
+        }
+
+        function deletePhoto(event, id) {
+            event.stopPropagation();
+            if (confirm('¿Eliminar esta foto?')) {
+                photos = photos.filter(p => p.id != id);
+                savePhotos();
+                renderPhotos();
+            }
+        }
+
+        function showPhotoModal(id) {
+            const photo = photos.find(p => p.id == id);
+            if (!photo) return;
+
+            document.getElementById('recipeDetail').innerHTML = `
+                <h2>${photo.name}</h2>
+                <p style="color: var(--text-light); margin: 15px 0;">
+                    📅 ${new Date(photo.date).toLocaleDateString('es-ES', {
+                        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                </p>
+                <div style="text-align: center; margin-top: 25px;">
+                    <img src="${photo.data}" style="max-width: 100%; border-radius: 15px; box-shadow: var(--shadow);" alt="${photo.name}">
+                </div>
+            `;
+            document.getElementById('recipeModal').classList.add('active');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            
+            addChatMessage(msg, 'user');
+            input.value = '';
+            
+            const recipes = db.getRecipes();
+            
+            document.getElementById('chatLoading').style.display = 'block';
+            
+            setTimeout(() => {
+                let reply = '';
+                const msgLower = msg.toLowerCase();
+                
+                // ========== RECETAS ARGENTINAS (15) ==========
+                
+                if (msgLower.includes('asado') || msgLower.includes('parrilla')) {
+                    reply = `🔥 **ASADO ARGENTINO**
+
+**Cortes principales:**
+• Vacío, tira de asado, chorizo
+• Morcilla, chinchulín
+• Provoleta
+
+**Técnica:**
+1. Fuego con carbón/leña (45 min antes)
+2. Salar la carne generosamente
+3. Coloca lejos del fuego directo
+4. Cocina lento: vacío 1h, tira 45min
+5. Voltea UNA sola vez
+6. Deja reposar 10 min antes de cortar
+
+**Acompañamientos:**
+• Chimichurri
+• Ensalada criolla
+• Pan
+
+⏱️ 2-3 horas
+💡 Tip: La clave es fuego INDIRECTO y paciencia!`;
+
+                } else if (msgLower.includes('empanada')) {
+                    reply = `🥟 **EMPANADAS ARGENTINAS**
+
+**Masa (12 empanadas):**
+• 500g harina
+• 150g grasa/manteca
+• 200ml agua tibia
+• Sal
+
+**Relleno de carne:**
+• 500g carne picada
+• 2 cebollas grandes
+• 3 huevos duros
+• 100g aceitunas
+• Comino, pimentón, ají molido
+
+**Preparación:**
+1. Masa: mezcla todo, amasa, reposa 30 min
+2. Sofríe cebolla hasta transparente
+3. Agrega carne, condimentos, cocina 10 min
+4. Enfría, agrega huevo y aceitunas
+5. Estira masa, corta círculos
+6. Rellena, repulga (cierra en repulgue)
+7. Hornea 180°C por 20-25 min
+
+⏱️ 1h 30min
+💡 Tip: Variantes: pollo, jamón y queso, humita!`;
+
+                } else if (msgLower.includes('milanesa')) {
+                    reply = `🍖 **MILANESA ARGENTINA**
+
+**Ingredientes:**
+• 4 bifes finos (nalga/cuadril)
+• 2 huevos batidos
+• Pan rallado
+• Ajo, perejil picado
+• Sal, pimienta
+• Aceite para freír
+
+**Preparación:**
+1. Aplana bien los bifes con mazo
+2. Sazona con sal, pimienta, ajo
+3. Pasa por huevo, luego pan rallado
+4. Presiona bien el rebozado
+5. Fríe en aceite caliente 3-4 min/lado
+6. Escurre en papel
+
+**Variantes:**
+• Milanesa napolitana (+ jamón, tomate, queso)
+• Milanesa a caballo (+ huevo frito)
+
+⏱️ 30 minutos
+💡 Tip: Para extra crocante, doble empanado!`;
+
+                } else if (msgLover.includes('choripán') || msgLower.includes('chori')) {
+                    reply = `🌭 **CHORIPÁN**
+
+**Ingredientes:**
+• Chorizo parrillero
+• Pan francés/baguette
+• Chimichurri
+
+**Chimichurri:**
+• Perejil picado
+• Ajo picado
+• Orégano
+• Ají molido
+• Vinagre, aceite
+• Sal
+
+**Preparación:**
+1. Asa chorizo a la parrilla 15-20 min
+2. Voltea varias veces
+3. Corta pan al medio, tuesta levemente
+4. Coloca chorizo (cortar mariposa opcional)
+5. Agrega chimichurri generoso
+
+⏱️ 25 minutos
+💡 Tip: El chimichurri debe reposar 30 min antes!`;
+
+                } else if (msgLower.includes('locro')) {
+                    reply = `🍲 **LOCRO CRIOLLO**
+
+**Ingredientes:**
+• 500g maíz blanco pelado
+• 300g porotos blancos
+• 500g carne vacuna
+• 200g panceta
+• 2 chorizos colorados
+• 1 cebolla, 2 cebollas de verdeo
+• Zapallo, batata
+• Comino, pimentón, ají molido
+
+**Preparación:**
+1. Remoja maíz y porotos noche anterior
+2. Hierve maíz 2 horas
+3. Agrega porotos, carne, panceta
+4. Cocina 1 hora más
+5. Incorpora zapallo, batata, chorizo
+6. Cocina 30 min hasta espeso
+7. Sofrito final: cebolla + ají + pimentón
+
+⏱️ 4 horas
+💡 Tip: Típico del 25 de Mayo!`;
+
+                } else if (msgLower.includes('alfajor')) {
+                    reply = `🍪 **ALFAJORES DE MAICENA**
+
+**Ingredientes:**
+• 200g maicena
+• 100g harina
+• 150g manteca
+• 100g azúcar
+• 2 yemas
+• Ralladura limón
+• Dulce de leche
+• Coco rallado
+
+**Preparación:**
+1. Mezcla manteca + azúcar
+2. Agrega yemas y ralladura
+3. Incorpora maicena y harina
+4. Refrigera 30 min
+5. Estira, corta círculos
+6. Hornea 180°C por 8-10 min
+7. Rellena con dulce de leche
+8. Pasa por coco rallado
+
+⏱️ 1 hora
+💡 Tip: Deben quedar suaves, no crocantes!`;
+
+                } else if (msgLower.includes('chimichurri')) {
+                    reply = `🌿 **CHIMICHURRI ARGENTINO**
+
+**Ingredientes:**
+• 1 taza perejil fresco picado
+• 4 dientes ajo picados
+• 2 cdas orégano seco
+• 1 cda ají molido
+• 1/2 taza aceite oliva
+• 1/4 taza vinagre vino tinto
+• Sal, pimienta
+
+**Preparación:**
+1. Pica fino perejil y ajo
+2. Mezcla con orégano y ají
+3. Agrega aceite y vinagre
+4. Sazona con sal y pimienta
+5. Deja reposar mínimo 30 min
+
+⏱️ 10 min + reposo
+💡 Tip: Mejora con los días. Dura 1 semana!`;
+
+                } else if (msgLower.includes('dulce de leche') || msgLower.includes('ddl')) {
+                    reply = `🍯 **DULCE DE LECHE CASERO**
+
+**Ingredientes:**
+• 2L leche entera
+• 500g azúcar
+• 1 cdta bicarbonato
+• 1 cdta esencia vainilla
+
+**Preparación:**
+1. Hierve leche con azúcar
+2. Baja fuego, agrega bicarbonato
+3. Cocina 2-3 horas revolviendo
+4. Debe reducir y espesar
+5. Agrega vainilla al final
+6. Enfría (espesa más)
+
+⏱️ 3 horas
+💡 Tip: Paciencia y revolver para no quemar!`;
+
+                } else if (msgLower.includes('provoleta')) {
+                    reply = `🧀 **PROVOLETA A LA PARRILLA**
+
+**Ingredientes:**
+• 1 horma provolone (200g)
+• Orégano, ají molido
+• Aceite de oliva
+• Opcion: tomate, ajo
+
+**Preparación:**
+1. Corta queso 2cm grosor
+2. Rocía con aceite
+3. Espolvorea orégano y ají
+4. Parrilla bien caliente
+5. Cocina 3-4 min hasta burbujeante
+6. Sirve inmediatamente con pan
+
+⏱️ 10 minutos
+💡 Tip: No voltear, cocinar solo de un lado!`;
+
+                } else if (msgLower.includes('matambre') && msgLower.includes('pizza')) {
+                    reply = `🍕 **MATAMBRE A LA PIZZA**
+
+**Ingredientes:**
+• 1kg matambre
+• Salsa tomate
+• Muzzarella
+• Orégano, ají molido
+• Aceitunas
+
+**Preparación:**
+1. Aplana matambre
+2. Sazona con sal, pimienta
+3. Dora en plancha 3 min/lado
+4. Cubre con salsa
+5. Agrega queso, aceitunas
+6. Gratina horno 10 min
+
+⏱️ 30 minutos
+💡 Tip: Cortar en porciones antes de servir!`;
+
+                } else if (msgLower.includes('humita')) {
+                    reply = `🌽 **HUMITA EN CHALA**
+
+**Ingredientes:**
+• 12 choclos
+• 2 cebollas
+• Pimiento rojo
+• Queso cremoso
+• Sal, pimienta, azúcar
+
+**Preparación:**
+1. Ralla choclos (guarda chalas)
+2. Sofríe cebolla y pimiento
+3. Agrega choclo rallado
+4. Cocina 15 min
+5. Agrega queso, sazona
+6. Envuelve en chalas
+7. Cocina al vapor 30 min
+
+⏱️ 1 hora
+💡 Tip: Ata con tiras de chala!`;
+
+                } else if (msgLower.includes('carbonada')) {
+                    reply = `🥘 **CARBONADA CRIOLLA**
+
+**Ingredientes:**
+• 800g carne en cubos
+• 3 papas, 2 batatas
+• 2 choclos
+• Zapallo
+• 2 tomates, cebolla
+• Arroz, duraznos
+
+**Preparación:**
+1. Dora carne en olla
+2. Sofríe cebolla y tomate
+3. Agrega caldo, hierve
+4. Incorpora papas, batata, zapallo
+5. Agrega choclo y arroz
+6. Cocina 30 min
+7. Termina con duraznos
+
+⏱️ 1h 30min
+💡 Tip: Se sirve en zapallo ahuecado!`;
+
+                } else if (msgLower.includes('fugazza') || msgLower.includes('fugazzeta')) {
+                    reply = `🍕 **FUGAZZETA**
+
+**Masa:**
+• 500g harina
+• 300ml agua tibia
+• Levadura, sal, aceite
+
+**Relleno:**
+• 4 cebollas grandes
+• Muzzarella abundante
+• Orégano
+
+**Preparación:**
+1. Prepara masa pizza
+2. Estira, coloca queso
+3. Cubre con segunda capa masa
+4. Sofríe cebollas hasta doradas
+5. Coloca cebollas encima
+6. Más queso, orégano
+7. Hornea 250°C por 15 min
+
+⏱️ 1h + leudado
+💡 Tip: Típica de Buenos Aires!`;
+
+                } else if (msgLower.includes('vitel toné') || msgLower.includes('vitel tone')) {
+                    reply = `🥩 **VITEL TONÉ**
+
+**Ingredientes:**
+• 1kg peceto
+• 2 latas atún
+• 4 anchoas
+• Alcaparras
+• Mayonesa
+• Crema
+
+**Preparación:**
+1. Hierve peceto con laurel 1h
+2. Enfría y corta fino
+3. Licúa atún + anchoas + alcaparras + mayo
+4. Agrega crema hasta consistencia
+5. Cubre carne con salsa
+6. Refrigera 4 horas
+7. Decora con alcaparras
+
+⏱️ 1h 30min + frío
+💡 Tip: Típico de Navidad y Año Nuevo!`;
+
+                } else if (msgLower.includes('pastelito')) {
+                    reply = `🥐 **PASTELITOS CRIOLLOS**
+
+**Masa:**
+• 500g harina
+• 100g grasa
+• Agua, sal
+
+**Relleno:**
+• Dulce membrillo/batata
+• O carne (como empanada)
+
+**Preparación:**
+1. Prepara masa, reposa
+2. Estira fino
+3. Corta rectángulos
+4. Coloca dulce
+5. Dobla, sella bordes
+6. Fríe en aceite caliente
+7. Espolvorea azúcar
+
+⏱️ 45 minutos
+💡 Tip: Típicos del 25 de Mayo!`;
+
+                // ========== RECETAS INTERNACIONALES (15) ==========
+                
+                } else if (msgLower.includes('carbonara')) {
+                    reply = `🍝 **PASTA CARBONARA**
+
+**Ingredientes:**
+• 200g spaghetti
+• 100g panceta
+• 2 huevos + 1 yema
+• 50g parmesano
+• Pimienta negra
+
+**Pasos:**
+1. Hierve pasta 8-10 min
+2. Fríe panceta crujiente
+3. Bate huevos + queso + pimienta
+4. Mezcla pasta con panceta
+5. Retira fuego, agrega huevos
+6. Revuelve rápido
+
+⏱️ 20 min`;
+
+                } else if (msgLower.includes('brownie')) {
+                    reply = `🍫 **BROWNIES**
+
+**Ingredientes:**
+• 200g chocolate
+• 150g mantequilla
+• 3 huevos
+• 200g azúcar
+• 100g harina
+
+**Pasos:**
+1. Horno 180°C
+2. Derrite chocolate + mantequilla
+3. Bate huevos + azúcar
+4. Mezcla todo
+5. Hornea 25-30 min
+6. Enfriar antes de cortar
+
+⏱️ 45 min`;
+
+                } else if (msgLower.includes('pad thai')) {
+                    reply = `🍜 **PAD THAI**
+
+**Ingredientes:**
+• 200g fideos arroz
+• 200g camarones/pollo
+• 2 huevos
+• Brotes soja, maní
+• Salsa tamarindo, pescado
+• Lima, cilantro
+
+**Preparación:**
+1. Remoja fideos 20 min
+2. Saltea proteína
+3. Empuja al lado, scramble huevos
+4. Agrega fideos escurridos
+5. Salsas + brotes + maní
+6. Sirve con lima
+
+⏱️ 25 min`;
+
+                } else if (msgLower.includes('ramen')) {
+                    reply = `🍜 **RAMEN CASERO**
+
+**Caldo:**
+• Huesos cerdo/pollo
+• Jengibre, ajo
+• Cebollín
+
+**Toppings:**
+• Fideos ramen
+• Huevo marinado
+• Cerdo chashu
+• Alga nori, cebollín
+
+**Preparación:**
+1. Hierve huesos 4 horas
+2. Cuela caldo
+3. Cocina fideos aparte
+4. Monta: caldo + fideos + toppings
+
+⏱️ 30 min (si tienes caldo)`;
+
+                } else if (msgLower.includes('pho')) {
+                    reply = `🍲 **PHO VIETNAMITA**
+
+**Caldo:**
+• Huesos res
+• Jengibre, cebolla asada
+• Anís estrella, canela
+• Salsa pescado
+
+**Componentes:**
+• Fideos arroz
+• Carne res fina
+• Brotes, albahaca, lima
+
+**Preparación:**
+1. Caldo: hierve 6 horas
+2. Cocina fideos
+3. Carne cruda en bowl
+4. Vierte caldo hirviendo
+5. Agrega hierbas frescas
+
+⏱️ 20 min (con caldo)`;
+
+                } else if (msgLower.includes('falafel')) {
+                    reply = `🧆 **FALAFEL**
+
+**Ingredientes:**
+• 2 tazas garbanzos remojados
+• Cebolla, ajo
+• Perejil, cilantro
+• Comino
+• Bicarbonato
+
+**Preparación:**
+1. Procesa todo (NO cocinar garbanzos)
+2. Refrigera 1 hora
+3. Forma bolitas
+4. Fríe 180°C por 4 min
+5. Sirve en pita con tahini
+
+⏱️ 30 min + reposo`;
+
+                } else if (msgLower.includes('curry')) {
+                    reply = `🍛 **CURRY DE POLLO**
+
+**Ingredientes:**
+• 500g pollo
+• 400ml leche coco
+• 2 cdas curry
+• Cebolla, ajo, jengibre
+• Tomate
+• Arroz
+
+**Preparación:**
+1. Sofríe cebolla + ajo + jengibre
+2. Agrega curry, tuesta
+3. Pollo en cubos, dora
+4. Tomate + leche coco
+5. Cocina 20 min
+6. Sirve con arroz
+
+⏱️ 40 min`;
+
+                } else if (msgLower.includes('paella')) {
+                    reply = `🥘 **PAELLA VALENCIANA**
+
+**Ingredientes:**
+• 400g arroz bomba
+• Pollo, conejo
+• Judías verdes
+• Garrofón
+• Tomate, azafrán
+• Caldo
+
+**Preparación:**
+1. Dora carnes
+2. Sofríe verduras
+3. Agrega tomate
+4. Arroz, tuesta
+5. Caldo + azafrán
+6. Cocina 18 min sin remover
+7. Reposa 5 min
+
+⏱️ 1 hora`;
+
+                } else if (msgLower.includes('ceviche')) {
+                    reply = `🐟 **CEVICHE PERUANO**
+
+**Ingredientes:**
+• 500g pescado blanco fresco
+• Jugo 10 limones
+• Cebolla morada
+• Ají limo
+• Cilantro
+• Camote, choclo
+
+**Preparación:**
+1. Corta pescado cubos
+2. Cebolla en juliana fina
+3. Mezcla pescado + limón + ají
+4. Refrigera 10-15 min
+5. Agrega cebolla, cilantro
+6. Sirve con camote
+
+⏱️ 20 min
+💡 Pescado FRESCO obligatorio!`;
+
+                } else if (msgLower.includes('bibimbap')) {
+                    reply = `🍚 **BIBIMBAP COREANO**
+
+**Ingredientes:**
+• Arroz
+• Carne marinada
+• Zanahoria, espinaca, brotes
+• Huevo frito
+• Pasta gochujang
+• Aceite sésamo
+
+**Preparación:**
+1. Cocina arroz
+2. Saltea vegetales separados
+3. Cocina carne
+4. Monta en bowl: arroz base
+5. Vegetales en secciones
+6. Carne, huevo encima
+7. Gochujang al lado
+
+⏱️ 35 min`;
+
+                } else if (msgLower.includes('fish and chips')) {
+                    reply = `🐟 **FISH AND CHIPS**
+
+**Pescado:**
+• Merluza/bacalao
+• Cerveza, harina
+• Polvo hornear
+
+**Preparación:**
+1. Mezcla harina + cerveza + polvo
+2. Seca pescado
+3. Reboza en masa
+4. Fríe 180°C por 6 min
+5. Papas: corta gruesas, fríe doble
+6. Sirve con vinagre malteado
+
+⏱️ 30 min`;
+
+                } else if (msgLower.includes('goulash') || msgLower.includes('gulash')) {
+                    reply = `🍲 **GOULASH HÚNGARO**
+
+**Ingredientes:**
+• 800g carne res
+• Cebollas
+• Pimentón húngaro
+• Tomates
+• Papas
+• Caldo
+
+**Preparación:**
+1. Sofríe cebollas
+2. Agrega carne en cubos
+3. Pimentón abundante
+4. Tomate + caldo
+5. Cocina 1.5 horas
+6. Agrega papas último 30 min
+
+⏱️ 2 horas`;
+
+                } else if (msgLower.includes('moussaka')) {
+                    reply = `🍆 **MOUSSAKA GRIEGA**
+
+**Ingredientes:**
+• Berenjenas
+• Carne cordero/res
+• Bechamel
+• Tomate, cebolla
+• Queso
+
+**Preparación:**
+1. Corta berenjenas, sala, escurre
+2. Fríe berenjenas
+3. Sofrito: carne + cebolla + tomate
+4. Capa berenjenas
+5. Capa carne
+6. Bechamel encima
+7. Hornea 180°C por 45 min
+
+⏱️ 1h 30min`;
+
+                } else if (msgLower.includes('lasaña') || msgLower.includes('lasagna')) {
+                    reply = `🍝 **LASAÑA BOLOÑESA**
+
+**Ingredientes:**
+• Placas lasaña
+• Salsa boloñesa
+• Bechamel
+• Mozzarella, parmesano
+
+**Preparación:**
+1. Prepara boloñesa (2 horas)
+2. Prepara bechamel
+3. Monta: salsa, placas, bechamel
+4. Repite capas
+5. Termina con queso
+6. Hornea 180°C por 40 min
+7. Reposa 15 min
+
+⏱️ 1 hora + salsas`;
+
+                } else if (msgLower.includes('Wellington') || msgLower.includes('beef wellington')) {
+                    reply = `🥩 **BEEF WELLINGTON**
+
+**Ingredientes:**
+• Lomo res (600g)
+• Paté/duxelle champiñones
+• Jamón serrano
+• Hojaldre
+• Huevo
+
+**Preparación:**
+1. Sella lomo todos lados
+2. Unta con mostaza
+3. Envuelve en jamón
+4. Cubre con duxelle
+5. Envuelve en hojaldre
+6. Pinta con huevo
+7. Hornea 200°C por 25 min
+
+⏱️ 1 hora
+💡 Elegante y difícil!`;
+
+                // ========== SISTEMA DE AYUDA Y MENÚS ==========
+
+                } else if (msgLower.includes('argentina') || msgLower.includes('argentin') || msgLower.includes('criolla')) {
+                    reply = `🇦🇷 **RECETAS ARGENTINAS:**
+
+🔥 **Asados y Carnes:**
+• Asado a la parrilla
+• Choripán
+• Milanesa (napolitana, a caballo)
+• Matambre a la pizza
+
+🥟 **Empanadas y Masas:**
+• Empanadas (carne, pollo, jamón-queso)
+• Pastelitos criollos
+• Fugazzeta
+
+🍲 **Guisos:**
+• Locro criollo
+• Carbonada
+• Humita en chala
+
+🧀 **Quesos:**
+• Provoleta a la parrilla
+
+🍰 **Postres:**
+• Alfajores de maicena
+• Dulce de leche casero
+
+🥗 **Salsas:**
+• Chimichurri
+• Salsa criolla
+
+🎄 **Navidad:**
+• Vitel toné
+
+Escribe el nombre del plato!`;
+
+                } else if (msgLower.includes('internacional') || msgLower.includes('del mundo')) {
+                    reply = `🌍 **RECETAS INTERNACIONALES:**
+
+🇮🇹 **Italia:** Carbonara, Lasaña, Risotto
+🇯🇵 **Japón:** Ramen, Sushi
+🇹🇭 **Tailandia:** Pad Thai
+🇻🇳 **Vietnam:** Pho
+🇬🇷 **Grecia:** Moussaka
+🇪🇸 **España:** Paella
+🇵🇪 **Perú:** Ceviche
+🇰🇷 **Corea:** Bibimbap
+🇮🇳 **India:** Curry
+🇭🇺 **Hungría:** Goulash
+🇬🇧 **UK:** Fish and Chips
+🇫🇷 **Francia:** Beef Wellington
+🌍 **Medio Oriente:** Falafel
+
+¿Cuál quieres probar?`;
+
+                } else if (msgLower.includes('fácil') || msgLower.includes('rápida') || msgLower.includes('simple')) {
+                    reply = `⚡ **RECETAS RÁPIDAS (15 min):**
+
+1. **PASTA AGLIO E OLIO**
+   Pasta + ajo + aceite (12 min)
+
+2. **CHORIPÁN**
+   Chorizo + pan + chimichurri (15 min)
+
+3. **QUESADILLAS**
+   Tortilla + queso (5 min)
+
+4. **MILANESA EXPRESS**
+   Bife + pan rallado (15 min)
+
+5. **HUEVOS REVUELTOS**
+   Huevos cremosos (8 min)
+
+Todas listas en minutos!`;
+
+                } else if (msgLower.includes('lista') || msgLower.includes('todas') || msgLower.includes('menú completo')) {
+                    reply = `📖 **MENÚ COMPLETO (45+ RECETAS):**
+
+🇦🇷 **ARGENTINAS (15):**
+Asado, Empanadas, Milanesa, Choripán, Locro, Alfajores, Chimichurri, Dulce de leche, Provoleta, Matambre pizza, Humita, Carbonada, Fugazzeta, Vitel toné, Pastelitos
+
+🌍 **INTERNACIONALES (15):**
+Carbonara, Pad Thai, Ramen, Pho, Falafel, Curry, Paella, Ceviche, Bibimbap, Fish&Chips, Goulash, Moussaka, Lasaña, Wellington, Sushi
+
+🍕 **BÁSICAS (15):**
+Pizza, Brownies, Hamburguesa, Tacos, Pancakes, Tiramisú, Risotto, César, Guiso, Sopa, Ensaladas, Postres varios
+
+**Escribe el nombre del plato!**`;
+
+                } else if (msgLower.includes('cómo') || msgLower.includes('receta de') || msgLower.includes('hacer')) {
+                    reply = `👨‍🍳 **¿QUÉ QUIERES COCINAR?**
+
+**Prueba escribir:**
+• "asado argentino"
+• "empanadas"
+• "recetas argentinas"
+• "pad thai"
+• "algo rápido"
+• "menú completo"
+
+¡Tengo 45+ recetas detalladas!`;
+
+                } else if (msgLower.includes('tengo') && (msgLower.includes('pollo') || msgLower.includes('carne') || msgLower.includes('huevo'))) {
+                    const ingredient = msgLower.includes('pollo') ? 'pollo' : msgLower.includes('carne') ? 'carne' : 'huevos';
+                    reply = `🔍 **CON ${ingredient.toUpperCase()} PUEDES HACER:**
+
+${ingredient === 'pollo' ? `• Milanesa de pollo
+• Curry de pollo
+• Pollo al horno
+• Empanadas de pollo
+• Pad Thai con pollo` : ingredient === 'carne' ? `• Asado
+• Empanadas de carne
+• Milanesa
+• Hamburguesa
+• Carbonada
+• Goulash` : `• Milanesa
+• Pancakes
+• Pasta carbonara
+• Huevos revueltos
+• Empanadas (en el relleno)`}
+
+¿Cuál te interesa?`;
+
+                } else if (msgLower.includes('pasta')) {
+                    reply = 'Tengo: Carbonara, Lasaña, Aglio e Olio. ¿Cuál quieres?';
+                } else if (msgLower.includes('carne') && !msgLower.includes('empanada')) {
+                    reply = 'Carnes: Asado argentino, Milanesa, Beef Wellington, Goulash. ¿Cuál te interesa?';
+                } else if (msgLower.includes('postre') || msgLower.includes('dulce')) {
+                    reply = 'Postres: Alfajores, Brownies, Tiramisú, Dulce de leche, Pancakes. ¿Cuál quieres?';
+                } else if (msgLower.includes('desayuno')) {
+                    reply = 'Desayuno: Pancakes, Huevos revueltos, Tostadas. ¿Qué prefieres?';
+                } else if (msgLower.includes('hola') || msgLower.includes('hi')) {
+                    reply = '¡Hola! 👋 Tengo 45+ recetas (15 argentinas). Prueba: "asado", "empanadas", "recetas argentinas", "pad thai", o "menú completo"';
+                } else if (msgLower.includes('gracias')) {
+                    reply = '¡De nada! 🙌 Buen provecho y feliz cocina!';
+                } else if (msgLower.includes('mis recetas') || (msgLower.includes('receta') && msgLower.includes('guardada'))) {
+                    if (recipes.length > 0) {
+                        reply = `📖 Tienes ${recipes.length} receta(s): ${recipes.map(r => r.name).join(', ')}`;
+                    } else {
+                        reply = 'No tienes recetas guardadas. ¡Prueba pedirme una! "asado", "empanadas", "pad thai"';
+                    }
+                } else {
+                    reply = `👨‍🍳 **ASISTENTE DE RECETAS**
+
+🇦🇷 Recetas Argentinas
+🌍 Recetas Internacionales
+⚡ Recetas Rápidas
+
+**Escribe:**
+• Nombre del plato: "asado", "empanadas"
+• "recetas argentinas"
+• "menú completo"
+• "algo rápido"
+
+¡45+ recetas disponibles!`;
+                }
+                
+                conversationHistory.push({ role: 'user', content: msg });
+                conversationHistory.push({ role: 'assistant', content: reply });
+                addChatMessage(reply, 'assistant');
+                document.getElementById('chatLoading').style.display = 'none';
+            }, 1000);
+        }
+
+        function addChatMessage(msg, type) {
+            const chat = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.className = `chat-message ${type}`;
+            div.innerHTML = type === 'assistant' ? `<strong>Asistente:</strong> ${msg}` : `<strong>Tú:</strong> ${msg}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function testConnection() {
+            const statusEl = document.getElementById('connectionStatus');
+            statusEl.innerHTML = '<span style="color: #f59e0b;">●</span> Probando...';
+            
+            setTimeout(() => {
+                if (navigator.onLine) {
+                    statusEl.innerHTML = '<span style="color: var(--secondary);">●</span> Conectado ✓';
+                    addChatMessage('✅ El asistente está listo para ayudarte. Escribe tu pregunta!', 'assistant');
+                } else {
+                    statusEl.innerHTML = '<span style="color: #dc2626;">●</span> Sin conexión';
+                    addChatMessage('❌ Sin conexión a internet. El asistente funciona offline con respuestas básicas.', 'assistant');
+                }
+            }, 500);
+        }
+
+        function checkInitialConnection() {
+            const statusEl = document.getElementById('connectionStatus');
+            if (statusEl) {
+                statusEl.innerHTML = '<span style="color: var(--secondary);">●</span> Listo';
+            }
+        }
+
+        window.addEventListener('online', () => {
+            const statusEl = document.getElementById('connectionStatus');
+            if (statusEl) statusEl.innerHTML = '<span style="color: var(--secondary);">●</span> Listo';
+        });
+
+        window.addEventListener('offline', () => {
+            const statusEl = document.getElementById('connectionStatus');
+            if (statusEl) statusEl.innerHTML = '<span style="color: #dc2626;">●</span> Sin conexión';
+        });
+
+        document.getElementById('recipeModal').addEventListener('click', (e) => {
+            if (e.target.id === 'recipeModal') closeModal();
+        });
+
+        init();
+    </script>
+</body>
+</html>
